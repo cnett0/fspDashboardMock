@@ -224,8 +224,10 @@ function buildFlexband(
 // ── Asset data generation ─────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const TODAY = '2026-06-14'
-const YESTERDAY = '2026-06-13'
+const _now = new Date()
+const _yd  = new Date(_now); _yd.setUTCDate(_now.getUTCDate() - 1)
+const TODAY     = _now.toISOString().slice(0, 10)
+const YESTERDAY = _yd.toISOString().slice(0, 10)
 const MEASURED_UNTIL_TODAY = 68  // slot 68 = 17:00 UTC ≈ current time
 const MEASURED_UNTIL_YESTERDAY = 95  // full day
 
@@ -258,10 +260,10 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   }
 })()
 
-// ── Asset 2: BAT-TEN-002, ci_battery, 200 kW / 400 kWh ──────────────────────
+// ── Asset 2: BAT-TEN-002, ci_battery, 95 kW / 190 kWh ───────────────────────
 
 ;(() => {
-  const nm = 200, seed = 2, cap = 400
+  const nm = 95, seed = 2, cap = 190
   const bFn = (i: number) => batBaseline(i, nm, seed)
   const profile = slots(TODAY).map((_, i) => bFn(i))
   const socs = buildSoc(profile, cap, 12, 'positive')
@@ -279,7 +281,7 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   for (const [day, until] of [[YESTERDAY, MEASURED_UNTIL_YESTERDAY],[TODAY, MEASURED_UNTIL_TODAY]] as const) {
     allMeasured[`asset-2-${day}`] = buildMeasured(day, i => ({
       gridKw: bFn(i),
-      batKw:  -bFn(i),  // batKw = -gridKw for pure battery (charging = batKw < 0)
+      batKw:  -bFn(i),
       soc:    socs[i],
     }), until)
   }
@@ -307,6 +309,12 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   }
   for (const [day, until] of [[YESTERDAY, MEASURED_UNTIL_YESTERDAY],[TODAY, MEASURED_UNTIL_TODAY]] as const) {
     allMeasured[`asset-3-${day}`] = buildMeasured(day, i => ({ gridKw: bFn(i) }), until)
+  }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-3-${day}`] = buildFlexband(day, bFn,
+      i => clamp(nm - bFn(i), 1, nm * 0.28),
+      i => Math.min(clamp(bFn(i), 1, nm * 0.52), nm * 0.52),
+      0.30, nm, 0)
   }
 })()
 
@@ -346,6 +354,13 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
       soc:    socs[i],
     }), until)
   }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-4-${day}`] = buildFlexband(day,
+      i => totalFn(i),
+      i => Math.max(0, pvGenKw(i, nmPv, seed) * 0.3) + clamp(nmBat - batFn(i), 0.5, nmBat * 0.90),
+      i => Math.max(0, pvGenKw(i, nmPv, seed) * 0.7) + clamp(nmBat + batFn(i), 0.5, nmBat * 0.90),
+      0.22, nmBat, -nmBat)
+  }
 })()
 
 // ── Asset 5: HP-TEN-005, heat_pump, 55 kW ───────────────────────────────────
@@ -373,10 +388,10 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   }
 })()
 
-// ── Asset 6: BAT-TEN-006, ci_battery, 500 kW / 1000 kWh ─────────────────────
+// ── Asset 6: BAT-TEN-006, ci_battery, 90 kW / 180 kWh ───────────────────────
 
 ;(() => {
-  const nm = 500, seed = 6, cap = 1000
+  const nm = 90, seed = 6, cap = 180
   const bFn = (i: number) => batBaseline(i, nm, seed)
   const socs = buildSoc(slots(TODAY).map((_, i) => bFn(i)), cap, 8, 'positive')
   for (const day of [YESTERDAY, TODAY]) {
@@ -419,12 +434,18 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   for (const [day, until] of [[YESTERDAY, MEASURED_UNTIL_YESTERDAY],[TODAY, MEASURED_UNTIL_TODAY]] as const) {
     allMeasured[`asset-7-${day}`] = buildMeasured(day, i => ({ gridKw: bFn(i) }), until)
   }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-7-${day}`] = buildFlexband(day, bFn,
+      i => clamp(nm - bFn(i), 3, nm * 0.28),
+      i => Math.min(clamp(bFn(i), 3, nm * 0.55), nm * 0.55),
+      0.30, nm, 0)
+  }
 })()
 
-// ── Asset 8: BAT-TEN-008, pv_coupled, 150 kW / 300 kWh ──────────────────────
+// ── Asset 8: BAT-TEN-008, pv_coupled, 85 kW / 170 kWh ───────────────────────
 
 ;(() => {
-  const nmPv = 120, nmBat = 150, seed = 8, cap = 300
+  const nmPv = 68, nmBat = 85, seed = 8, cap = 170
   const pvFn  = (i: number) => pvGridBaseline(i, nmPv, seed)
   const batFn = (i: number) => pvBatBaseline(i, nmBat, seed)
   for (const day of [YESTERDAY, TODAY]) {
@@ -481,12 +502,18 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   for (const [day, until] of [[YESTERDAY, MEASURED_UNTIL_YESTERDAY],[TODAY, MEASURED_UNTIL_TODAY]] as const) {
     allMeasured[`asset-9-${day}`] = buildMeasured(day, i => ({ gridKw: bFn(i) }), until)
   }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-9-${day}`] = buildFlexband(day, bFn,
+      i => clamp(nm - bFn(i), 1, nm * 0.28),
+      i => Math.min(clamp(bFn(i), 1, nm * 0.52), nm * 0.52),
+      0.30, nm, 0)
+  }
 })()
 
-// ── Asset 10: BAT-TEN-010, ci_battery, 120 kW / 240 kWh ─────────────────────
+// ── Asset 10: BAT-TEN-010, ci_battery, 80 kW / 160 kWh ──────────────────────
 
 ;(() => {
-  const nm = 120, seed = 10, cap = 240
+  const nm = 80, seed = 10, cap = 160
   const bFn = (i: number) => batBaseline(i, nm, seed)
   const socs = buildSoc(slots(TODAY).map((_, i) => bFn(i)), cap, 18, 'positive')
   for (const day of [YESTERDAY, TODAY]) {
@@ -528,12 +555,18 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   for (const [day, until] of [[YESTERDAY, MEASURED_UNTIL_YESTERDAY],[TODAY, MEASURED_UNTIL_TODAY]] as const) {
     allMeasured[`asset-11-${day}`] = buildMeasured(day, i => ({ gridKw: bFn(i) }), until)
   }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-11-${day}`] = buildFlexband(day, bFn,
+      i => clamp(nm - bFn(i), 1, nm * 0.28),
+      i => Math.min(clamp(bFn(i), 1, nm * 0.52), nm * 0.52),
+      0.30, nm, 0)
+  }
 })()
 
-// ── Asset 12: BAT-TEN-012, ci_battery, 1000 kW / 2000 kWh ───────────────────
+// ── Asset 12: BAT-TEN-012, ci_battery, 95 kW / 190 kWh ──────────────────────
 
 ;(() => {
-  const nm = 1000, seed = 12, cap = 2000
+  const nm = 95, seed = 12, cap = 190
   const bFn = (i: number) => batBaseline(i, nm, seed)
   const socs = buildSoc(slots(TODAY).map((_, i) => bFn(i)), cap, 10, 'positive')
   for (const day of [YESTERDAY, TODAY]) {
@@ -576,6 +609,12 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   for (const [day, until] of [[YESTERDAY, MEASURED_UNTIL_YESTERDAY],[TODAY, MEASURED_UNTIL_TODAY]] as const) {
     allMeasured[`asset-13-${day}`] = buildMeasured(day, i => ({ gridKw: bFn(i) }), until)
   }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-13-${day}`] = buildFlexband(day, bFn,
+      i => clamp(nm - bFn(i), 0.5, nm * 0.28),
+      i => Math.min(clamp(bFn(i), 0.5, nm * 0.52), nm * 0.52),
+      0.30, nm, 0)
+  }
 })()
 
 // ── Asset 14: BAT-TEN-014, home_battery, 12 kW / 24 kWh + PV 8 kW ──────────
@@ -612,6 +651,13 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
       soc:    socs[i],
     }), until)
   }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-14-${day}`] = buildFlexband(day,
+      i => totalFn(i),
+      i => Math.max(0, pvGenKw(i, nmPv, seed) * 0.35) + clamp(nmBat - batFn(i), 0.5, nmBat * 0.90),
+      i => Math.max(0, pvGenKw(i, nmPv, seed) * 0.65) + clamp(nmBat + batFn(i), 0.5, nmBat * 0.90),
+      0.22, nmBat, -nmBat)
+  }
 })()
 
 // ── Asset 15: HP-TEN-015, heat_pump, 70 kW ───────────────────────────────────
@@ -639,10 +685,10 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   }
 })()
 
-// ── Asset 16: BAT-TEN-016, ci_battery, 300 kW / 600 kWh ─────────────────────
+// ── Asset 16: BAT-TEN-016, ci_battery, 90 kW / 180 kWh ──────────────────────
 
 ;(() => {
-  const nm = 300, seed = 16, cap = 600
+  const nm = 90, seed = 16, cap = 180
   const bFn = (i: number) => batBaseline(i, nm, seed)
   const socs = buildSoc(slots(TODAY).map((_, i) => bFn(i)), cap, 15, 'positive')
   for (const day of [YESTERDAY, TODAY]) {
@@ -684,12 +730,18 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   for (const [day, until] of [[YESTERDAY, MEASURED_UNTIL_YESTERDAY],[TODAY, MEASURED_UNTIL_TODAY]] as const) {
     allMeasured[`asset-17-${day}`] = buildMeasured(day, i => ({ gridKw: bFn(i) }), until)
   }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-17-${day}`] = buildFlexband(day, bFn,
+      i => clamp(nm - bFn(i), 1.5, nm * 0.28),
+      i => Math.min(clamp(bFn(i), 1.5, nm * 0.52), nm * 0.52),
+      0.30, nm, 0)
+  }
 })()
 
-// ── Asset 18: BAT-TEN-018, pv_coupled, 100 kW / 200 kWh ─────────────────────
+// ── Asset 18: BAT-TEN-018, pv_coupled, 90 kW / 180 kWh ──────────────────────
 
 ;(() => {
-  const nmPv = 85, nmBat = 100, seed = 18, cap = 200
+  const nmPv = 76, nmBat = 90, seed = 18, cap = 180
   const pvFn  = (i: number) => pvGridBaseline(i, nmPv, seed)
   const batFn = (i: number) => pvBatBaseline(i, nmBat, seed)
   for (const day of [YESTERDAY, TODAY]) {
@@ -745,12 +797,18 @@ const allFlexband: Record<string, FlexbandPoint[]> = {}
   for (const [day, until] of [[YESTERDAY, MEASURED_UNTIL_YESTERDAY],[TODAY, MEASURED_UNTIL_TODAY]] as const) {
     allMeasured[`asset-19-${day}`] = buildMeasured(day, i => ({ gridKw: bFn(i) }), until)
   }
+  for (const day of [YESTERDAY, TODAY]) {
+    allFlexband[`asset-19-${day}`] = buildFlexband(day, bFn,
+      i => clamp(nm - bFn(i), 2, nm * 0.28),
+      i => Math.min(clamp(bFn(i), 2, nm * 0.55), nm * 0.55),
+      0.30, nm, 0)
+  }
 })()
 
-// ── Asset 20: BAT-TEN-020, ci_battery, 250 kW / 500 kWh ─────────────────────
+// ── Asset 20: BAT-TEN-020, ci_battery, 90 kW / 180 kWh ──────────────────────
 
 ;(() => {
-  const nm = 250, seed = 20, cap = 500
+  const nm = 90, seed = 20, cap = 180
   const bFn = (i: number) => batBaseline(i, nm, seed)
   const socs = buildSoc(slots(TODAY).map((_, i) => bFn(i)), cap, 20, 'positive')
   for (const day of [YESTERDAY, TODAY]) {

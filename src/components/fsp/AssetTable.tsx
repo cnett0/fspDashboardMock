@@ -41,7 +41,7 @@ export function AssetTable({ assets, filter, onSelect, selectedId, maxRows }: As
       key: 'name', header: 'Name',
       render: (a: Asset) => (
         <div>
-          <div className="text-slate-200 text-xs truncate max-w-44">{a.name}</div>
+          <div className="text-slate-800 text-xs truncate max-w-44">{a.name}</div>
           <div className="text-2xs text-slate-600">{a.city} · {FEDERAL_STATE_SHORT(a.federalState ?? '')}</div>
         </div>
       ),
@@ -64,7 +64,7 @@ export function AssetTable({ assets, filter, onSelect, selectedId, maxRows }: As
       ),
     },
     {
-      key: 'energy', header: 'Energie', align: 'right' as const,
+      key: 'energy', header: 'Energie verfügbar', align: 'center' as const,
       render: (a: Asset) => <span className="text-xs font-mono text-slate-400">{fmtEnergy(a.availableEnergyKwh)}</span>,
     },
     {

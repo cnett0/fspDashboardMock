@@ -110,9 +110,7 @@ export function FlexOfferPanel({ asset }: FlexOfferPanelProps) {
   )
   const hasMelo = !!asset.melo
   const { data: envelioRaw, loading: envelioLoading } = useApi(
-    () => hasMelo
-      ? getAssetFlexband(asset.id, { from: dayFrom, to: dayTo, limit: 500 })
-      : Promise.resolve([] as FlexbandPoint[]),
+    () => getAssetFlexband(asset.id, { from: dayFrom, to: dayTo, limit: 500 }),
     [asset.id, selectedDate],
   )
   const loading = offersLoading || measuredLoading || envelioLoading
@@ -396,7 +394,7 @@ export function FlexOfferPanel({ asset }: FlexOfferPanelProps) {
 
               {/* Legend */}
               <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 px-1">
-                {hasMelo && <LegendDot color="#06b6d4" label="Envelio Flexband (MeLo)" filled dashed />}
+                <LegendDot color="#06b6d4" label="Envelio Flexband" filled dashed />
                 <LegendDot color="#22c55e" label="Flexibilitätsband (RDV)" filled />
                 <LegendDot color="#f59e0b" label="Netz-Baseline" />
                 <LegendDot color="#f97316" label="Netzbezug (gemessen)" />

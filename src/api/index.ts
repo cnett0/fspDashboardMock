@@ -39,8 +39,7 @@ export async function getFlexOffers(filters: FlexOfferFilters = {}): Promise<Fle
 }
 
 export async function getLatestFlexOffers(): Promise<FlexOffer[]> {
-  // Return the last slot of today for all sub-assets
-  const today = '2026-06-14'
+  const today = new Date().toISOString().slice(0, 10)
   const cutoff = `${today}T17:00:00.000Z`
   return Promise.resolve(
     MOCK_ALL_FLEX_OFFERS.filter(o => o.ts === cutoff),
