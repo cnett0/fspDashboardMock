@@ -64,7 +64,7 @@ export function AssetsPage() {
               { id: 'table', label: 'Table' },
               { id: 'cards', label: 'Cards' },
               { id: 'map', label: 'Map' },
-              { id: 'flex', label: 'TSO Validation' },
+              { id: 'flex', label: 'Flex View' },
               { id: 'compare', label: 'Baseline Compare' },
             ]}
             activeTab={viewMode}
@@ -93,7 +93,7 @@ export function AssetsPage() {
               {/* TSO Validation header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-bold text-white">TSO Validation View</h2>
+                  <h2 className="text-sm font-bold text-white">Flex View</h2>
                   <p className="text-2xs text-slate-500">Grid Baseline · Flexibility Band · Measured Delivery — 15-min resolution</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export function AssetsPage() {
               <ShieldCheck size={32} className="text-slate-700" />
               <p className="text-sm text-slate-400">No asset selected</p>
               <p className="text-2xs text-slate-600 max-w-xs">
-                Select an asset from the table or map view to see its TSO validation data.
+                Select an asset from the table or map view to see its Flex View data.
               </p>
               <button onClick={() => setViewMode('table')} className="mt-1 text-2xs text-blue-400 hover:underline">
                 Go to table →
